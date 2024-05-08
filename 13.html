@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表达式求值</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom, rgb(48, 104, 176), rgb(30, 48, 71));
+        }
+
+        p {
+            color: aliceblue;
+        }
+
+        input {
+            width: 310px;
+            height: 50px;
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-bottom-color: aliceblue;
+            outline: none;
+            color: aliceblue;
+            font-size: 25px;
+        }
+
+        .main {
+            height: 731px;
+            margin: auto 50px;
+        }
+
+        .main2 {
+            /* 显示模块 */
+            width: 320px;
+            height: 120px;
+            background-color: rgb(35, 57, 85);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .main1 {
+            /* 输入模块 */
+            padding-top: 5px;
+            width: 360px;
+            height: 310px;
+            background-color: rgb(35, 57, 85);
+            border-radius: 20px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+
+        .top {
+            color: aliceblue;
+            font-size: 25px;
+        }
+
+        .op {
+            margin-top: 10px;
+            margin-left: 3px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+            height: 280px;
+        }
+
+        .op div {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background-color: rgb(222, 159, 77);
+            font-size: 25px;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .count {
+            text-align: center;
+            margin-top: 4px;
+            margin-right: 10px;
+            width: 350px;
+            height: 40px;
+            border-radius: 7px;
+            background-color: rgb(101, 222, 243);
+            color: beige;
+            line-height: 40px;
+            box-shadow: 0px 0px 30px 10px rgba(101, 222, 243, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+    <form action="/res">
+        <div class="main">
+            <div class="main2">
+                <input type="text" name="str" value="{{.Str}}">
+                <input type="text" value="{{.Res}}">
+                <br><br>
+            </div>
+            <div class="main1">
+                <div class="op">
+                </div>
+            </div>
+        </div>
+    </form>
+    <div style="width:120px;background-color:rgb(151, 151, 151)"></div>
+
+    <script>
+        // 计算器面板
+        let arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', '*', '/', '.', '%', '(', ')', 'del', 'C', '计算']
+        const op = document.querySelector('.op')
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i] == 'del') {
+                op.innerHTML += `<div data-id=${i} style="width:160px;background-color:rgb(151, 151, 151)">${arr[i]}</div>&nbsp;`
+            } else if (arr[i] == 'C') {
+                op.innerHTML += `<div data-id=${i} style="width:170px;background-color:rgb(151, 151, 151)">${arr[i]}</div>&nbsp;`
+            } else if (arr[i] == '计算') {
+                op.innerHTML += `<input type="submit" class="count" value="计算">`
+            } else {
+                op.innerHTML += `<div data-id=${i}>${arr[i]}</div>&nbsp;`
+            }
+        }
+
+        // 表达式数组
+        let arr1 = new Array()
+        let now;//now表示当前点击对应的字符在arr数组中对应的下标
+        let staTop = 0;//0表示此时应放到的下标位置，故此时有0个元素
+        let str
+
+        // 数字判断
+        let numcheck = a => {
+            if (a >= '0' && a <= '9') {
+                return true
+            }
+            return false
+        }
+        // check函数
+        let check = str => {
+            console.log('str是原字符串');
+            console.log(str);
+
+            // 排除一个左括号和一个右括号中间表达式不合法的情况
+            // 合法的情况为：
+            // 左括号的下一位只能是数字或者左括号
+            // 右括号的上一位只能是数字或者%或者右括号
+
+            // 以及排除左括号左边不合法及右括号右边不合法的情况
+            // 合法情况为：
+            // 左括号左边不能是数字或者%
+            // 右括号右边不能是数字
+            for (let i = 0; i < str.length - 1; i++) {
+                // 对左括号的限制
+                if (str[i] == '(') {
+                    // 底下这些是判断括号内部的异常情况
+                    if (!(str[i + 1] == '(' || numcheck(str[i + 1]))) {
+                        alert('输入不合法')
+                        return false
+                    }
+                    // 底下这些是判断括号外部的异常情况，即左括号左边既右括号右边
+                    if (i != 0) {
+                        if (numcheck(str[i - 1]) || str[i - 1] == '%') {
+                            alert('输入不合法')
+                            return false
+                        }
+                    }
+                } else if (str[i] == ')') {
+                    // 对右括号的限制
+                    // 底下这些是判断括号内部的异常情况
+                    if (!(str[i - 1] == ')' || numcheck(str[i - 1] || str[i - 1] == '%'))) {
+                        alert('输入不合法')
+                        return false
+                    }
+                    // 底下这些是判断括号外部的异常情况，即左括号左边既右括号右边
+                    if (i != str.length - 1) {
+                        if (numcheck(str[i + 1])) {
+                            alert('输入不合法')
+                            return false
+                        }
+                    }
+                }
+
+            }
+
+            let str3 = new Array()//存储去除括号以外的表达式，即str去除括号,以判断百分号使用不当的情况,对它进行去除%处理得到str1
+            let str1 = new Array()//判断去除括号及%后的表达式（因为%可以理解为数字的一部分，他必须和数字同时出现并且是出现在数字后面），以判断是否有运算符或小数点连用的情况
+            let str2 = new Array()//存储运算符，即str1去除数字，以判断是否有小数点使用不规范的情况
+            let flag = 0//0表示没问题
+            // 括号匹配
+            let top = 0
+            for (let i = 0; i < str.length; i++) {
+                if (str[i] == '(') {
+                    top++
+                } else if (str[i] == ')') {
+                    top--
+                    if (top < 0) {
+                        flag = 1
+                    }
+                } else {
+                    str3.push(str[i])
+                }
+            }
+            if (flag == 1 || top != 0) {
+                alert('输入不合法')
+                return false
+            }
+
+            console.log('str3是去除括号之后字符串');
+            console.log(str3);
+            // 判断%使用错误，即判断str3,如果没问题，存在str1里
+            for (let i = 0; i < str3.length; i++) {
+                if (str3[i] == '%') {
+                    if (!(i == str3.length - 1 || str3[i + 1] == ')' || str3[i + 1] == '+' || str3[i + 1] == '-' || str3[i + 1] == '*' || str3[i + 1] == '/')) {
+                        alert('输入不合法')
+                        return false
+                    }
+                } else {
+                    str1.push(str3[i])
+                }
+            }
+
+            console.log('str1是去除%之后字符串');
+            console.log(str1);
+            // 运算符号
+            for (let i = 0; i < str1.length; i++) {
+                if (!numcheck(str1[i])) {
+                    str2.push(str1[i])
+                    if (!numcheck(str1[i - 1]) || !numcheck(str1[i + 1])) {
+                        alert('输入不合法')
+                        return false
+                    }
+                }
+            }
+
+            console.log('str2是去除数字之后字符串，也就是只剩下运算符');
+            console.log(str2);
+            // 小数点
+            for (let i = 0; i < str2.length - 1; i++) {
+                if (str2[i] == '.' && str2[i + 1] == '.') {
+                    alert('输入不合法')
+                    return false
+                }
+            }
+            return true
+        }
+
+
+        // 在计算器面板里输入
+        let inps = document.querySelectorAll('input')
+        op.addEventListener('click', e => {
+            if (arr1.length == 0) {
+                inps[1].value = ''
+            }
+            if (e.target.tagName == 'DIV') {
+                now = e.target.dataset.id
+                if (now >= 0 && now <= 17) {
+                    arr1.push(arr[now])
+                    staTop++
+                } else if (now == 18) {
+                    arr1.pop()
+                    staTop--
+                } else if (now == 19) {
+                    arr1 = []
+                    staTop = 0
+                    inps[1].value = ''
+                }
+            }
+
+            // 将计算器输入的东西转为字符串并将其展示到inps[0]里
+            str = arr1.join('')
+            inps[0].value = str
+        })
+
+
+        const count = document.querySelector('.count')
+        count.addEventListener('click', function (e) {
+            if (!check(inps[0].value)) {
+                arr1 = []
+                staTop = 0
+                str = arr1.join('')
+                inps[0].value = str
+                e.preventDefault()
+            }
+        })
+
+    </script>
+</body>
+
+</html>

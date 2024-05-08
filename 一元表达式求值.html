@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom, rgb(48, 104, 176), rgb(30, 48, 71));
+        }
+
+        p {
+            color: aliceblue;
+        }
+
+        input {
+            width: 300px;
+            height: 40px;
+            background-color: transparent;
+            border: 1px solid transparent;
+            border-bottom-color: aliceblue;
+            outline: none;
+            color: aliceblue;
+        }
+
+        .main {
+            height: 731px;
+            margin: 0px 100px;
+        }
+
+        .main2 {
+            width: 300px;
+            height: 280px;
+            margin-top: 100px;
+            background-color: rgb(35, 57, 85);
+            padding: 20px 70px;
+            border-radius: 20px;
+        }
+
+        .main1 {
+            width: 300px;
+            height: 290px;
+            margin-top: 100px;
+            background-color: rgb(35, 57, 85);
+            /* padding:20px 70px; */
+            border-radius: 20px;
+        }
+
+        .count {
+            text-align: center;
+            width: 80px;
+            height: 40px;
+            border-radius: 7px;
+            background-color: rgb(101, 219, 225);
+            color: beige;
+            line-height: 40px;
+            box-shadow: 0px 0px 30px 10px rgba(90, 206, 241, 0.6);
+
+        }
+
+        .top {
+            color: aliceblue;
+            font-size: 25px;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-around;
+        }
+
+        .op {
+            margin-top: 10px;
+            margin-left: 3px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+            height: 280px;
+        }
+
+        .op div {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background-color: rgb(222, 159, 77);
+            font-size: 25px;
+            line-height: 50px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <div class="main1">
+            <div class="op">
+            </div>
+        </div>
+        <div class="main2">
+            <form action="/res">
+                <p class="top">一元表达式求值</p>
+                <p>表达式</p>
+                <input type="text" name="str" value="{{.Str}}">
+                <input type="text" value="{{.Res}}">
+                <br><br>
+                <input type="submit" class="count" value="计算">
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // 计算器面板
+        let arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', '*', '/', '.', '%', '(', ')', 'del', 'C']
+        const op = document.querySelector('.op')
+        for (let i = 0; i < 20; i++) {
+            op.innerHTML += `<div data-id=${i}>${arr[i]}</div>&nbsp;`
+        }
+
+        // 表达式数组
+        let arr1 = new Array()
+        let now;//now表示当前点击对应的字符在arr数组中对应的下标
+        let staTop = 0;//0表示此时应放到的下标位置，故此时有0个元素
+        let str
+
+        // 数字判断
+        let numcheck = a => {
+            if (a >= '0' && a <= '9') {
+                return true
+            }
+            return false
+        }
+
+        // check函数
+        let check = str => {
+            let str1 = new Array()//存储去除括号以外的表达式，即str去除括号，以判断是否有运算符或小数点连用的情况
+            let str2 = new Array()//存储运算符，即str1去除数字，以判断是否有小数点使用不规范的情况
+            let flag = 0//0表示没问题
+            // 括号匹配
+            let top = 0
+            for (let i = 0; i < str.length; i++) {
+                if (str[i] == '(') {
+                    top++
+                } else if (str[i] == ')') {
+                    top--
+                    if (top < 0) {
+                        flag = 1
+                    }
+                } else {
+                    str1.push(str[i])
+                }
+            }
+            if (flag == 1 || top != 0) {
+                alert('括号匹配有问题')
+                return false
+            }
+
+            // 运算符号
+            for (let i = 0; i < str1.length; i++) {
+                if (!numcheck(str1[i])) {
+                    str2.push(str1[i])
+                    if (!numcheck(str1[i - 1]) || !numcheck(str1[i + 1])) {
+                        alert('运算符号不能连着')
+                        return false
+                    }
+                }
+            }
+
+            // 小数点
+            for (let i = 0; i < str2.length - 1; i++) {
+                if (str2[i] == '.' && str2[i + 1] == '.') {
+                    alert('小数点使用不规范')
+                    return false
+                }
+            }
+            return true
+        }
+
+
+        // 在计算器面板里输入
+        let inps = document.querySelectorAll('input')
+        op.addEventListener('click', e => {
+            if (e.target.tagName == 'DIV') {
+                now = e.target.dataset.id
+                if (now >= 0 && now <= 17) {
+                    arr1.push(arr[now])
+                    staTop++
+                } else if (now == 18) {
+                    arr1.pop()
+                    staTop--
+                } else if (now == 19) {
+                    arr1 = []
+                    staTop = 0
+                    inps[1].value=''
+                }
+            }
+
+            // 将计算器输入的东西转为字符串并将其展示到inps[0]里
+            str = arr1.join('')
+            inps[0].value = str
+        })
+
+        // 点击计算发送数据
+        const count = document.querySelector('.count')
+        count.addEventListener('click', function (e) {
+            if (!check(inps[0].value)) {
+                e.preventDefault()
+            }else{
+                alert('发送成功')
+            }
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .maze {
+            margin: 100px auto;
+            width: 459px;
+            height: 459px;
+            border-left: 1px solid black;
+            border-top: 1px solid black;
+        }
+
+        .per {
+            width: 50px;
+            height: 50px;
+            float: left;
+            border-right: 1px solid black;
+            border-bottom: 1px solid black;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .per0 {
+            background-color: rgb(255, 255, 255);
+        }
+
+        .per1 {
+            background-color: rgb(0, 0, 0);
+        }
+
+        .go,
+        .back,
+        .auto,
+        .autoeve,
+        .autoshort {
+            width: 150px;
+            height: 50px;
+            text-align: center;
+            line-height: 50px;
+            font-size: 20px;
+            border-radius: 15px;
+            border: 1px solid black;
+            margin-top: 10px;
+            float: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="maze"></div>
+    <script>
+        // 实现的功能有：
+        // 1.手动展示整个搜索过程go
+        // 2.自动展示整个搜索过程auto
+        // 4.自动展示最短路径autoshort
+        // 5.回到初始样式
+
+        // 随机数生成
+        const ran = (a, b) => {
+            let c = Math.floor(Math.random() * (b - a + 1)) + a
+            return c
+        }
+
+        // 迷宫情况
+        // const r = 9, l = 9
+        // let maze = [
+        // [0, 1, 1, 0, 0, 0, 0, 0, 1],
+        // [0, 1, 1, 0, 1, 1, 1, 0, 1],
+        // [0, 1, 1, 1, 0, 1, 0, 1, 0],
+        // [0, 0, 0, 1, 0, 1, 0, 1, 1],
+        // [1, 1, 0, 0, 1, 0, 0, 0, 1],
+        // [1, 1, 1, 0, 1, 0, 0, 1, 0],
+        // [1, 0, 1, 0, 1, 1, 1, 1, 1],
+        // [1, 1, 0, 0, 0, 1, 0, 0, 0],
+        // [0, 1, 0, 1, 0, 0, 0, 0, 0]];
+        const r = ran(5, 9), l = ran(5, 9)
+        console.log(r);
+        console.log(l);
+        let maze = new Array(r)
+        for (let i = 0; i < r; i++) {
+            maze[i] = new Array(l)
+            for (let j = 0; j < l; j++) {
+                let a = ran(0, 2)
+                if (a == 2) {
+                    maze[i][j] = 1
+                } else {
+                    maze[i][j] = 0
+                }
+            }
+        }
+        maze[0][0] = 0
+        maze[r - 1][l - 1] = 0
+
+        // 深搜递归次数
+        let count = 0
+
+        // 初始化迷宫样式
+        let mazebox = document.querySelector('.maze')
+        const width = 50 * l + l
+        const height = 50 * r + r
+        mazebox.style.width = `${width}px`
+        mazebox.style.height = `${height}px`
+        for (let i = 0; i < maze.length; i++) {
+            for (let j = 0; j < maze[0].length; j++) {
+                if (maze[i][j] == 0) {
+                    mazebox.innerHTML += `<div class="per per${maze[i][j]}" data-id=a${i * 10 + j} style="background-color: rgb(255, 255, 255);"></div>`
+                } else if (maze[i][j] == 1) {
+                    mazebox.innerHTML += `<div class="per per${maze[i][j]}" data-id=a${i * 10 + j} style="background-color: rgb(0,0,0);"></div>`
+                }
+            }
+        }
+        mazebox.innerHTML += '<div class="go">GO</div>'
+        mazebox.innerHTML += '<div class="back">BACK</div>'
+        mazebox.innerHTML += '<div class="auto">AUTO</div>'
+        mazebox.innerHTML += '<div class="autoshort">AUTOshort</div>'
+
+        // 将每个per盒子获取出来
+        let pers = document.querySelectorAll('.per')
+        pers[0].innerHTML = 'in'
+        pers[pers.length - 1].innerHTML = 'out'
+
+        // 获取四个点击盒子
+        const go = document.querySelector('.go')
+        const auto = document.querySelector('.auto')
+        const back = document.querySelector('.back')
+        const autoshort = document.querySelector('.autoshort')
+
+        // 一些全局变量
+        // 栈，表示走过的路程，本质为二维数组
+        let sta = new Array()
+        // 保存每种方法栈的数组，本质为三维数组
+        let ressta = new Array()
+        // 整个栈
+        let allsta = new Array()
+        // 表示当前遍历到全栈的下标数和当前正在处理的要变色的div及其对应的data-id属性值
+        let now = 0
+        let nowdiv
+        let nowid
+        // 最短路径的长度和最短路径在ressta中的下标
+        let len, index
+        // 四种方向分别用两个数组来表示
+        const dx = [0, 1, 0, -1]
+        const dy = [1, 0, -1, 0]
+
+        // 深搜函数
+        let dfs = (x, y) => {
+            count++
+            sta.push([x, y])
+            allsta.push([x, y])
+            // 可以推出[x,y]对应的盒子在pers中的下标是x*l+y
+            if (x == r - 1 && y == l - 1) {
+                ressta.push([].concat(sta))//这里不能用浅拷贝，因为sta一直在变化
+                allsta.push(sta.pop())
+                return
+            }
+            maze[x][y] = 1
+            for (let i = 0; i < 4; i++) {
+                let px = x + dx[i]
+                let py = y + dy[i]
+                if (px >= 0 && py >= 0 && px <= r - 1 && py <= l - 1 && maze[px][py] == 0) {
+                    dfs(px, py)
+                }
+            }
+            allsta.push(sta.pop())
+            maze[x][y] = 0
+            return
+        }
+        // 开始深搜
+        dfs(0, 0)
+
+
+
+
+        // 函数部分
+        // 动画
+        const show = (Sta) => {
+            // 到终点的情况
+            console.log(Sta[now][0], Sta[now][1]);
+            if (Sta[now][0] == r - 1 && Sta[now][1] == l - 1) {
+                nowid = Sta[now][0] * 10 + Sta[now][1]
+                nowdiv = document.querySelector(`[data-id=a${nowid}]`)
+                console.log('ok');
+                if (nowdiv.style.backgroundColor == 'blue') {
+                    nowdiv.style.backgroundColor = 'rgb(255, 255, 255)'
+                } else if (nowdiv.style.backgroundColor == 'rgb(255, 255, 255)') {
+                    nowdiv.style.backgroundColor = 'blue'
+                }
+            } else {
+                nowid = Sta[now][0] * 10 + Sta[now][1]
+                nowdiv = document.querySelector(`[data-id=a${nowid}]`)
+                if (nowdiv.style.backgroundColor == 'red') {
+                    nowdiv.style.backgroundColor = 'rgb(255, 255, 255)'
+                } else if (nowdiv.style.backgroundColor == 'rgb(255, 255, 255)') {
+                    nowdiv.style.backgroundColor = 'red'
+                }
+            }
+        }
+        // 自动展示函数
+        const autofun = (Sta) => {
+            now = 0
+            let timer = setInterval(() => {
+                if (now >= Sta.length) {
+                    now = 0
+                    clearInterval(timer)
+                } else {
+                    show(Sta)
+                    now++
+                }
+            }, 100)
+        }
+        // 回到初始样式函数
+        let backfun = () => {
+            now = 0
+            for (let i = 0; i < allsta.length; i++) {
+                nowid = allsta[now][0] * 10 + allsta[now][1]
+                nowdiv = document.querySelector(`[data-id=a${nowid}]`)
+                now++
+                nowdiv.style.backgroundColor = 'rgb(255, 255, 255)'
+            }
+            now = 0
+        }
+
+        // 事件监听部分
+        // 手动展示整个搜索过程
+        go.addEventListener('click', () => {
+            if (now >= allsta.length) {
+                now = 0
+            } else {
+                show(allsta)
+                now++
+            }
+        })
+        // 自动展示整个搜索过程
+        auto.addEventListener('click', () => {
+            autofun(allsta)
+        })
+        // 回到初始样式
+        back.addEventListener('click', () => {
+            backfun()
+        })
+
+        // 自动展示最短路径
+        autoshort.addEventListener('click', () => {
+            // 如果没有路径
+            if (ressta.length == 0) {
+                alert('没有路径')
+            }
+            // 如果有路径
+            else {
+                // 获取最短路径长度和最短路径，分别用变量len和way表示
+                len = ressta[0].length
+                index = 0
+                for (let i = 1; i < ressta.length; i++) {
+                    if (len > ressta[i].length) {
+                        len = ressta[i].length
+                        index = i
+                    }
+                }
+                autofun(ressta[index])
+            }
+        })
+
+
+
+    </script>
+</body>
+
+</html>
